@@ -13,3 +13,4 @@ Installations:
 Comments from author:
 * Comments // have been removed from previous API project.
 * You will have to migrate the API to your Microsoft DB. Previous project contains instructions on how to do that. //Might add later
+* Remember to choose solution api.sln
