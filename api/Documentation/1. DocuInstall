@@ -1,0 +1,15 @@
+Prerequisites:
+    All previous installations and setup will be needed for the API to work as is
+    Make sure that the API project works (recommended to download the EF-API project from GitHub for proper setup):
+    cd api
+    dotnet watch run
+ 
+Installations:
+    **Install 8.0.0 versions
+    Microsoft.Extensions.Identity.Core
+    Microsoft.AspNetCore.Identity.EntityFrameworkCore
+    Microsoft.AspNetCore.Authentication.JwtBearer
+
+Comments from author:
+* Comments // have been removed from previous API project.
+* You will have to migrate the API to your Microsoft DB. Previous project contains instructions on how to do that. //Might add later
