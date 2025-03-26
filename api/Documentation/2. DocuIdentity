@@ -1,0 +1,56 @@
+This is kind of a lot so there will be a lot of explanations to look up on what all this does.
+
+
+1. Create a new Model called AppUser.cs and make the class inherit from IdentityUser
+2. Modify ApplicationDBContext.cs in the Data folder to inherit from IdentityDbContext<AppUser> instead of just IdentityDbContext
+3. Go to Program.cs and hook up our User and ApplicationDB to it like this:
+    builder.Services.AddIdentity<AppUser, IdentityRole>(options => {
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequiredLength = 8;
+    })
+    .AddEntityFrameworkStores<ApplicationDBContext>();
+
+    Modify it as you please, these are some examples
+
+We need to add our Authentication Service and Schemes. Schemes basically means if we're going to add JWT, cookies, a mixture of both?
+We won't be using cookies, just straight JWT
+
+4. Go to Program.cs again and underneath what we just did, paste this:
+    builder.Services.AddAuthentication(options => {
+    options.DefaultAuthenticateScheme = 
+    options.DefaultChallengeScheme = 
+    options.DefaultForbidScheme = 
+    options.DefaultScheme = 
+    options.DefaultSignInScheme = 
+    options.DefaultSignOutScheme = JwtBearerDefaults.AuthenticationScheme;
+    }).AddJwtBearer(options => {
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = builder.Configuration["JWT:Issuer"],
+        ValidateAudience = true,
+        ValidAudience = builder.Configuration["JWT:Audience"],
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(
+            System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT:SigningKey"])
+        )
+        };
+    });
+
+5. Also go into appsettings.json and add this JWT underneath AllowedHosts, separated by a comma
+    "AllowedHosts": "*",
+    "JWT": {
+    "Issuer": "http://localhost:5246",
+    "Audience": "http://localhost:5246",
+    "SigningKey": "sakura"
+    }
+
+"sakura" is something that you don't want to share with others, but you can type your own Signing key here
+Now we must do a migration to our database
+
+6. Open up terminal and cd api.
+    dotnet ef migrations add Identity
+    dotnet ef database update
