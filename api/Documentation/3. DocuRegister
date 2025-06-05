@@ -1,0 +1,127 @@
+UserManage is going to take care of a lot of things for us.
+It will provide us with CreateAsync which creates a user with login information for us.
+It's an insane method, it will take a user, a "password" and -> hash & salt it for us and store into the database.
+
+We can thus make it a little more difficult for someone that has broken into our database to not reach clear text storage of someone's password.
+
+Keep in mind that this tutorial creates some things out of order to limit text, so some code has not been created when we paste our templates.
+
+1. Now we need to create a new Controller inside the Controllers folder -> name it AccountController.cs
+
+2. Fill this in:
+
+namespace api.Controllers
+{
+    [Route("api/account")]
+    [ApiController]
+    public class AccountController : ControllerBase
+    {
+        private readonly UserManager<AppUser> _usermanager;
+        public AccountController(UserManager<AppUser> userManager)
+        {
+            _usermanager = userManager;
+        }
+
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                var appUser = new AppUser
+                {
+                    UserName = registerDto.UserName,
+                    Email = registerDto.Email
+                };
+
+                var createdUser = await _usermanager.CreateAsync(appUser, registerDto.Password);
+
+                if (createdUser.Succeeded)
+                {
+                    var roleResult = await _usermanager.AddToRoleAsync(appUser, "User");
+                    if (roleResult.Succeeded)
+                    {
+                        return Ok("User created");
+                    }
+                    else
+                    {
+                        return StatusCode(500, roleResult.Errors);
+                    }
+                }
+                else
+                {
+                    return StatusCode(500, createdUser.Errors);
+                }
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, e);
+            }
+        }
+    }
+}
+
+3. Create Account folder inside Dtos folder
+4. We havent created the Dto yet so let's do that. Create RegisterDto.cs inside the Dtos/Account folder.
+
+5. Fill this into RegisterDto.cs:
+namespace api.Dtos.Account
+{
+    public class RegisterDto
+    {
+        [Required]
+        public string? UserName { get; set; }
+        [Required]
+        [EmailAddress]
+        public string? Email { get; set; }
+        [Required]
+        public string? Password { get; set; }
+    }
+}
+
+6. Add different roles and Modify ApplicationDBContext.cs to look like this:
+namespace api.Data
+{
+    public class ApplicationDBContext : IdentityDbContext<AppUser>
+    {
+        public ApplicationDBContext(DbContextOptions dbContextOptions)
+        : base(dbContextOptions)
+        {
+
+        }
+        public DbSet<Post> Posts { get; set; }
+        public DbSet<Comment> Comments { get; set; }
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            List<IdentityRole> roles = new List<IdentityRole>
+            {
+                new IdentityRole
+                {
+                Name = "Admin",
+                NormalizedName = "ADMIN"
+                },
+                new IdentityRole
+                {
+                Name = "User",
+                NormalizedName = "USER"
+                },
+            };
+            builder.Entity<IdentityRole>().HasData(roles);
+        }
+    }
+}
+
+7. Run commands without error:
+dotnet ef migrations add SeedRole
+dotnet ef database update
+
+8. Check SQL tables dbo.AspNetRoles for roles to have migrated into database.
+
+9. Test creating a user:
+    *dotnet watch Run
+    *create a user with password i.e. P@ssw0rd_444
+    *go into database dbo.AspNetUsers and see if a user was created
