@@ -1,0 +1,127 @@
+Difference between Claims and Roles:
+    Roles are more generic and broad (old school)
+    Claims don't require DB and are very flexible (new school)
+
+    *Microsoft has moved away from Roles
+
+We have our timezone, username, isPayingUser? already inside our JWT (Token).
+That means we can access these values within the HTTP context.
+
+The CLAIMS principle is almost like a wallet - this thing that keeps track of everything.
+We can hold these values of email, password inside our HTTP Context as long as the user is logged in.
+
+A service is very different from a repository: 
+    A repository is fot database calls. 
+    A service could be anything else, any time of abstraction
+
+Creating JWT Service:
+1. Create a new folder called Service in api.
+
+2. Create a new interface inside Interfaces folder called ITokenService, make it look like this:
+
+namespace api.Interfaces
+{
+    public interface ITokenService
+    {
+        string CreateToken(AppUser user);
+    }
+}
+
+3. Create a new class inside Service folder called TokenService and implement ITokenService
+Fill it out like this:
+
+namespace api.Service
+{
+    public class TokenService : ITokenService
+    {
+        private readonly IConfiguration _config;
+        private readonly SymmetricSecurityKey _key;
+        public TokenService(IConfiguration config) //This is appsettings.json
+        {
+            _config = config;
+            _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JWT:SigningKey"]));
+        }
+        public string CreateToken(AppUser user)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Email, user.Email), //Standard of JWT to use JwtRegisteredClaimNames
+                new Claim(JwtRegisteredClaimNames.GivenName, user.UserName) //GivenName means Username in this context
+            };
+
+            //Signing credentials is a way to say what kind of encryption we want.
+            var creds = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.Now.AddDays(7),
+                SigningCredentials = creds,
+                Issuer = _config["JWT:Issuer"],
+                Audience = _config["JWT:Audience"]
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            return tokenHandler.WriteToken(token); //JwtSecurityTokenHandler has a way to return the token in the form of a string.
+        }
+    }
+}
+
+4. Go to Program.cs and add our dependency:
+builder.Services.AddScoped<IPostRepository, PostRepository>();
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<ITokenService, TokenService>(); //This line is new
+
+5. Create a NewUserDto class inside Dtos/Account to return more than just the "User created" string from our AccountController's Register method.
+namespace api.Dtos.Account
+{
+    public class NewUserDto
+    {
+        public string UserName { get; set; }
+        public string Email { get; set; }
+        public string Token { get; set; }
+    }
+}
+
+6. Go to AccountController and add these lines to the constructor:
+        private readonly UserManager<AppUser> _usermanager;
+        private readonly ITokenService _tokenService; //This line
+        public AccountController(UserManager<AppUser> userManager, ITokenService tokenService) //This line
+        {
+            _usermanager = userManager;
+            _tokenService = tokenService; //This line
+        }
+
+7. Then also inside AccountController we can return more than just "User Created".
+Make the if-statement look like this:
+    if (roleResult.Succeeded)
+    {
+        return Ok(
+            new NewUserDto
+            {
+                UserName = appUser.UserName,
+                Email = appUser.Email,
+                Token = _tokenService.CreateToken(appUser)
+            }
+        );
+    }
+
+8. dotnet watch run AND create a user.
+
+9. Take the token string and decode it with https://jwt.io/
+
+All the information correct?
+{
+  "email": "investor2222@gmail.com",
+  "given_name": "investor2222",
+  "nbf": 1749299894,
+  "exp": 1749904694,
+  "iat": 1749299894,
+  "iss": "http://localhost:5246",
+  "aud": "http://localhost:5246"
+}
+
+Success!
