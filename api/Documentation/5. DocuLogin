@@ -1,0 +1,53 @@
+To Login we're going to use the UserManager and the SigninManager
+UserManager is what we use to find the user
+SigninManager is what we're going to use to check the password
+
+
+1. Create a LoginDto.cs inside Dtos/Account
+
+namespace api.Dtos.Account
+{
+    public class LoginDto
+    {
+        [Required]
+        public string UserName { get; set; }
+        [Required]
+        public string Password { get; set; }
+    }
+}
+
+2. Go and open AccountController.cs in Controllers folder
+Add AccountController to the constructor and private field
+Fields:
+        private readonly SignInManager<AppUser> _signInManager;
+        public AccountController(UserManager<AppUser> userManager, ITokenService tokenService, SignInManager<AppUser> signInManager)
+Constructor:
+        _signInManager = signInManager;
+
+3. Add new method to AccountController.cs for Login:
+
+[HttpPost]
+        public async Task<IActionResult> Login(LoginDto loginDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var user = await _usermanager.Users.FirstOrDefaultAsync(x => x.UserName == loginDto.UserName.ToLower());
+
+            if (user == null) return Unauthorized("Invalid username!");
+
+            var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
+
+            if (!result.Succeeded) return Unauthorized("Username not found and/or password incorrect");
+
+            return Ok(
+                new NewUserDto
+                {
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    Token = _tokenService.CreateToken(user)
+                }
+            );
+        }
+
+Try registering a new user and Login with it. Also try to login with wrong password or wrong username. (dotnet watch run)
