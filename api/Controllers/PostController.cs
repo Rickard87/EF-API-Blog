@@ -11,10 +11,12 @@ using api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 
 namespace api.Controllers
 {
-    [Route("api/post")] 
+    [Route("api/post")]
     [ApiController]
     public class PostController : ControllerBase
     {
@@ -37,30 +39,38 @@ namespace api.Controllers
             var posts = await _postRepo.GetAllAsync(query);
             var postDto = posts.Select(s => s.ToPostDto());
 
-            return Ok(posts);
+            return Ok(postDto);
         }
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            if(!ModelState.IsValid)
+            if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             var post = await _postRepo.GetByIdAsync(id);
 
-            if(post == null)
+            if (post == null)
             {
                 return NotFound();
             }
             return Ok(post.ToPostDto());
         }
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> Create([FromBody] CreatePostRequestDto postDto)
         {
-            if(!ModelState.IsValid)
+            if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var postModel = postDto.ToPostFromCreateDto();
+            // Hämta userId från token
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // <-- NYTT
+            Console.WriteLine($"{userId ?? "null"} Hello!!");
+
+            // if (string.IsNullOrEmpty(userId))
+            //     return Unauthorized(); // <-- NYTT: Token saknar userId
+
+            var postModel = postDto.ToPostFromCreateDto(userId);
             await _postRepo.CreateAsync(postModel);
             return CreatedAtAction(nameof(GetById), new { id = postModel.Id }, postModel.ToPostDto());
         }
@@ -68,7 +78,7 @@ namespace api.Controllers
         [Route("{id:int}")]
         public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdatePostRequestDto updateDto)
         {
-            if(!ModelState.IsValid)
+            if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             var postModel = await _postRepo.UpdateAsync(id, updateDto);
@@ -83,17 +93,32 @@ namespace api.Controllers
         [Route("{id:int}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            if(!ModelState.IsValid)
+            if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             var postModel = await _postRepo.DeleteAsync(id);
-            
+
             if (postModel == null)
             {
                 return NotFound();
             }
 
             return NoContent();
+        }
+
+        [HttpGet("user/{userId}")]
+        public async Task<IActionResult> GetPostsByUserId([FromRoute] string userId)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var posts = await _postRepo.GetPostsByUserIdAsync(userId);
+
+            if (posts == null || !posts.Any())
+                return NotFound($"No posts found for userId {userId}");
+
+            var postDtos = posts.Select(p => p.ToPostDto());
+            return Ok(postDtos);
         }
     }
 }

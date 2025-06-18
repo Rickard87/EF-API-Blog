@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using api.Dtos.Comment;
 using api.Interfaces;
@@ -61,7 +63,13 @@ namespace api.Controllers
                 return BadRequest("Post does not exist");
             }
 
-            var commentModel = commentDto.ToCommentFromCreate(postId);
+            // Hämta userId från token
+            var userId = User.FindFirstValue(JwtRegisteredClaimNames.NameId); // <-- NYTT
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(); // <-- NYTT: Token saknar userId
+
+            var commentModel = commentDto.ToCommentFromCreate(postId, userId);
             await _commentRepo.CreateAsync(commentModel);
             return CreatedAtAction(nameof(GetById), new {id = commentModel.Id}, commentModel.ToCommentDto());
         }

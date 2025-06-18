@@ -78,6 +78,11 @@ namespace api.Repository
             return await _context.Posts.Include(c => c.Comments).FirstOrDefaultAsync(i => i.Id == id);
         }
 
+        public async Task<IEnumerable<Post>> GetPostsByUserIdAsync(string userId)
+        {
+            return await _context.Posts.Where(p => p.AppUserId == userId).ToListAsync();
+        }
+
         public async Task<bool> PostExists(int id)
         {
             return await _context.Posts.AnyAsync(s => s.Id == id);

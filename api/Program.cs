@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using api.Data;
 using api.Interfaces;
 using api.Models;
@@ -79,7 +81,9 @@ builder.Services.AddAuthentication(options => {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(
             System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT:SigningKey"])
-        )
+        ),
+        NameClaimType = JwtRegisteredClaimNames.NameId,  // <-- detta är nyckeln
+        RoleClaimType = ClaimTypes.Role
     };
 });
 

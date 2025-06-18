@@ -13,5 +13,9 @@ namespace api.Models
         public string Body { get; set; } = string.Empty;
         public List<Comment> Comments { get; set; } = new List<Comment>();
 
+        //Koppling till Author
+        public string? AppUserId { get; set; }
+        public AppUser? AppUser { get; set; }
+
     }
 }

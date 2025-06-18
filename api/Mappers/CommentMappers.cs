@@ -17,16 +17,18 @@ namespace api.Mappers
                 Title = commentModel.Title,
                 Body = commentModel.Body,
                 CreatedOn = commentModel.CreatedOn,
-                PostId = commentModel.PostId
+                PostId = commentModel.PostId,
+                AppUserId = commentModel.AppUserId
             };
         }
-        public static Comment ToCommentFromCreate(this CreateCommentDto commentDto, int postId)
+        public static Comment ToCommentFromCreate(this CreateCommentDto commentDto, int postId, string userId)
         {
             return new Comment
             {
                 Title = commentDto.Title,
                 Body = commentDto.Body,
-                PostId = postId
+                PostId = postId,
+                AppUserId = userId
             };
         }
         public static Comment ToCommentFromUpdate(this UpdateCommentRequestDto commentDto)

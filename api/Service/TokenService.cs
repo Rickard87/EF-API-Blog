@@ -25,7 +25,8 @@ namespace api.Service
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Email, user.Email), //Standard of JWT to use JwtRegisteredClaimNames
-                new Claim(JwtRegisteredClaimNames.GivenName, user.UserName) //GivenName means Username in this context
+                new Claim(JwtRegisteredClaimNames.GivenName, user.UserName), //GivenName means Username in this context
+                new Claim(JwtRegisteredClaimNames.NameId, user.Id.ToString()) //NameId means UserID in this context
             };
 
             //Signing credentials is a way to say what kind of encryption we want.

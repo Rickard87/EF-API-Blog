@@ -17,16 +17,18 @@ namespace api.Mappers
                 Title = postModel.Title,
                 Body = postModel.Body,
                 CreatedOn = postModel.CreatedOn,
-                Comments = postModel.Comments.Select(c => c.ToCommentDto()).ToList()
+                Comments = postModel.Comments.Select(c => c.ToCommentDto()).ToList(),
+                AppUserId = postModel.AppUserId
             };
         }
-        public static Post ToPostFromCreateDto(this CreatePostRequestDto postDto)
+        public static Post ToPostFromCreateDto(this CreatePostRequestDto postDto, string userId)
         {
             return new Post
             {
                 Title = postDto.Title,
                 Body = postDto.Body,
-                CreatedOn = postDto.CreatedOn
+                CreatedOn = postDto.CreatedOn,
+                AppUserId = userId
             };
         }
     }

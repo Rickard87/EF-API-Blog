@@ -16,5 +16,6 @@ namespace api.Interfaces
         Task<Post?> UpdateAsync(int id, UpdatePostRequestDto postDto);
         Task<Post?> DeleteAsync(int id);
         Task<bool> PostExists(int id);
+        Task<IEnumerable<Post>> GetPostsByUserIdAsync(string userId);
     }
 }
